@@ -10,7 +10,11 @@ def check_keydown_events(event, screen, ai_settings, ship, bullets):
         # 飞船向右移动
         ship.moving_right = True
     elif event.key == pygame.K_SPACE:
-        # 添加一枚子弹
+        fire_bullet(bullets, screen, ai_settings, ship)
+            
+def fire_bullet(bullets, screen, ai_settings, ship):
+    # 添加一枚子弹
+    if len(bullets) < ai_settings.bullets_allowed:
         new_bullet = Bullet(screen, ai_settings, ship)
         bullets.add(new_bullet)
         
@@ -46,3 +50,11 @@ def update_screen(screen, settings, ship, bullets):
         bullet.draw_bullet()
     # 刷新屏幕
     pygame.display.flip()
+    
+def update_bullets(bullets):
+    '''更新子弹位置，超出范围则删除'''
+    bullets.update()
+    # 子弹超出屏幕后删除
+    for bullet in bullets.copy():
+        if bullet.rect.bottom <= 0:
+            bullets.remove(bullet)

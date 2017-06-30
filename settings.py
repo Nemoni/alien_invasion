@@ -10,7 +10,8 @@ class Settings():
         self.ship_speed_factor = 1.5
         # 设置子弹属性
         self.bullet_speed_factor = 1
-        self.bullet_width = 4
-        self.bullet_height = 15
+        self.bullet_width = 6
+        self.bullet_height = 18
         self.bullet_color = (60, 60, 60)
+        self.bullets_allowed = 30
         

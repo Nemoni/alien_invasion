@@ -21,8 +21,9 @@ def run_game():
     while True:
         gf.check_events(screen, ai_settings, ship, bullets)
         ship.update()
-        # 自动调用编组当中每个成员的update函数
-        bullets.update()
+        # 更新子弹位置
+        gf.update_bullets(bullets)
+                    
         gf.update_screen(screen, ai_settings, ship, bullets)
 
         
