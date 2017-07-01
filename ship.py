@@ -1,11 +1,12 @@
 import pygame
+from pygame.sprite import Sprite
 
-class Ship():
+class Ship(Sprite):
     def __init__(self, screen, ai_settings):
-        
+        super().__init__()
         self.screen = screen
         # 获取图片对象
-        self.image = pygame.image.load('images/alien.png')
+        self.image = pygame.image.load('images/ship.png')
         # 飞船位置
         self.rect = self.image.get_rect()
         # 屏幕位置
@@ -33,4 +34,7 @@ class Ship():
             self.center += self.ai_settings.ship_speed_factor
             
         self.rect.centerx = self.center
+    def center_ship(self):
+        self.center = self.screen_rect.centerx
+
         
