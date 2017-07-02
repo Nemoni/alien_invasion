@@ -22,6 +22,10 @@ class Ship(Sprite):
         self.moving_left = False
         self.moving_right = False
         
+    def change_image(self, image_url):
+        self.image = pygame.image.load(image_url)
+        self.rect = self.image.get_rect()
+        
     def blitme(self):
         '''在指定位置绘制对象'''
         self.screen.blit(self.image, self.rect)

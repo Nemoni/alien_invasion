@@ -9,15 +9,16 @@ class Settings():
         # 飞船移动速度
         self.ships_limit = 3
         # 设置子弹属性
-        self.bullet_width = 1200
+        self.bullet_width = 8
         self.bullet_height = 18
         self.bullet_color = (60, 60, 60)
         self.bullets_allowed = 30
-        # 设置外星人属性
-        self.fleet_drop_speed = 100
+        # 设置外星人向下速度
+        self.fleet_drop_speed = 10
         # 设置速度提升率
         self.speedup_scale = 1.1
         self.points_raise_scale = 1.5
+        self.init_dynamic_settings()
         
     def init_dynamic_settings(self):
         self.bullet_speed_factor = 1

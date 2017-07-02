@@ -3,8 +3,10 @@ import pygame
 from bullet import Bullet
 from alien import Alien
 from time import sleep
+import audio
+import os
 
-def check_keydown_events(event, screen, ai_settings, ship, bullets):
+def check_keydown_events(event, screen, ai_settings, ship, bullets, stats):
     if event.key == pygame.K_LEFT:
         # 飞船向左移动
         ship.moving_left = True
@@ -14,9 +16,11 @@ def check_keydown_events(event, screen, ai_settings, ship, bullets):
     elif event.key == pygame.K_SPACE:
         fire_bullet(bullets, screen, ai_settings, ship)
     elif event.key == pygame.K_q:
+        write_high_score_to_file(stats)
         sys.exit()
             
 def fire_bullet(bullets, screen, ai_settings, ship):
+    audio.play_shoot()
     # 添加一枚子弹
     if len(bullets) < ai_settings.bullets_allowed:
         new_bullet = Bullet(screen, ai_settings, ship)
@@ -50,12 +54,11 @@ def check_events(screen, ai_settings, ship, bullets, aliens,play_button, stats, 
     for event in pygame.event.get():
         # 关闭窗口事件
         if event.type == pygame.QUIT:
+            write_high_score_to_file(stats)
             sys.exit()
-        if stats.game_active == False and event.type != pygame.MOUSEBUTTONDOWN:
-            break
         # 按键按下事件
-        if event.type == pygame.KEYDOWN:
-            check_keydown_events(event, screen, ai_settings, ship, bullets)
+        elif event.type == pygame.KEYDOWN:
+            check_keydown_events(event, screen, ai_settings, ship, bullets, stats)
         # 按键放开事件
         elif event.type == pygame.KEYUP:
             check_keyup_events(event, ship)
@@ -69,16 +72,12 @@ def check_bullets_aliens_collisions(screen, ai_settings, ship, bullets, aliens, 
     collisions = pygame.sprite.groupcollide(bullets, aliens, True, True)
     if collisions:
         for coll_aliens in collisions.values():
+            audio.play_hit_alien()
             stats.score += ai_settings.alien_points * len(coll_aliens)
             sboard.prep_score()
     # 屏幕上的外星人已被全部消灭
     if len(aliens) == 0:
-        bullets.empty()
-        ai_settings.increase_speed()
-        create_fleet(screen, ai_settings, ship, aliens)
-        ship.center_ship()
-        stats.level += 1
-        sboard.prep_level()
+        next_level(screen, ai_settings, ship, bullets, aliens, stats, sboard)
         
 def update_bullets(screen, ai_settings, ship, bullets, aliens, sboard, stats):
     '''更新子弹位置，超出范围则删除'''
@@ -98,7 +97,7 @@ def get_number_liens_x(ai_settings, alien_width):
     
 def get_number_row(ai_settings, alien_height, ship):
     '''计算屏幕可容纳多少行外星人'''
-    available_space_y = ai_settings.screen_height - 4 * alien_height - ship.rect.height
+    available_space_y = ai_settings.screen_height - 3 * alien_height - ship.rect.height
     number_aliens_row = int(available_space_y/(alien_height * 1.2))
     return number_aliens_row
     
@@ -137,21 +136,21 @@ def check_fleet_edges(aliens, ai_settings):
         if alien.check_edges():
             fleet_change_direction(aliens, ai_settings)
             break
-            
+    
 def ship_hit(screen, ai_settings, aliens, bullets, ship, stats, sboard):
     aliens.empty()
     bullets.empty()
+    # 飞船数减一并重新准备显示板
     stats.ships_left -= 1
     sboard.prep_ships()
+    audio.play_dead()
+    # 飞船方向初始化
+    ai_settings.fleet_direction = 1
     if stats.ships_left > 0:
-        create_fleet(screen, ai_settings, ship, aliens)
-        ship.center_ship()
+        next_life(screen, ai_settings, ship, aliens)
     else:
-        stats.game_active = False
-        if stats.score > stats.high_score:
-            stats.high_score = stats.score
-            sboard.prep_high_score()
-    sleep(2)
+        game_over(stats, sboard)
+    sleep(1)
     
 def check_aliens_bottom(screen, ai_settings, aliens, bullets, ship, stats, sboard):
     '''外星人到达屏幕底端'''
@@ -171,6 +170,28 @@ def update_aliens(screen, ai_settings, aliens, bullets, ship, stats, sboard):
     # 外星人到达屏幕底端
     check_aliens_bottom(screen, ai_settings, aliens, bullets, ship, stats, sboard)
     
+def read_high_score_from_file(stats):
+    filename = 'alien_invasion.txt'
+    if os.path.isfile(filename):
+        with open(filename) as file_object:
+            contents = file_object.read()
+            str_high_score = contents.strip()
+            if str_high_score != '':
+                stats.high_score = float(str_high_score)
+    
+def write_high_score_to_file(stats):
+    filename = 'alien_invasion.txt'
+    old_high_score = 0
+    if os.path.isfile(filename):
+        with open(filename) as file_object:
+            contents = file_object.read()
+            str_high_score = contents.strip()
+            if str_high_score != '':
+                old_high_score = float(str_high_score)
+    if stats.score > old_high_score:
+        with open(filename, 'w') as file_object:
+            file_object.write(str(stats.score))
+
 def update_screen(screen, settings, ship, bullets, aliens, play_button, stats, sboard):
     '''更新屏幕'''
     # 填充背景色
@@ -190,4 +211,26 @@ def update_screen(screen, settings, ship, bullets, aliens, play_button, stats, s
     # 刷新屏幕
     pygame.display.flip()
     
-
+def game_over(stats, sboard):
+    stats.game_active = False
+    audio.play_gameover()
+    if stats.score > stats.high_score:
+        stats.high_score = stats.score
+        sboard.prep_high_score()
+        write_high_score_to_file(stats)
+    
+def next_life(screen, ai_settings, ship, aliens):
+    create_fleet(screen, ai_settings, ship, aliens)
+    ship.center_ship()
+    
+def next_level(screen, ai_settings, ship, bullets, aliens, stats, sboard):
+    '''外星人被全部消灭，进入下一关'''
+    bullets.empty()
+    ai_settings.increase_speed()
+    create_fleet(screen, ai_settings, ship, aliens)
+    ship.center_ship()
+    stats.level += 1
+    sboard.prep_level() 
+    audio.play_next_level()
+    sleep(1)
+    
